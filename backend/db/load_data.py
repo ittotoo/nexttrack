@@ -16,7 +16,7 @@ DB_CONFIG = {
 }
 
 # Dataset path
-DATASET_PATH = Path(__file__).parent.parent.parent / 'Data' / 'dataset.csv'
+DATASET_PATH = Path(__file__).parent.parent.parent / 'Data' / 'dataset_cleaned.csv'
 
 
 def connect_db():
