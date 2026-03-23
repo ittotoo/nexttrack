@@ -42,8 +42,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize Spotify client (singleton) - used as fallback
-spotify_client = SpotifyClient()
+# Initialize Spotify client (optional fallback)
+try:
+    spotify_client = SpotifyClient()
+except Exception:
+    spotify_client = None
+    logger.info("Spotify client not configured — using database only")
 
 # Initialize database connection
 db = Database()
@@ -148,12 +152,14 @@ async def get_track(track_id: str) -> Track:
             logger.info(f"Track {track_id} found in database")
             return track
 
-        # Fallback to Spotify API (slower, may not have audio features)
-        logger.info(f"Track {track_id} not in database, trying Spotify API")
-        track = spotify_client.get_track_with_features(track_id)
-        if not track:
-            raise HTTPException(status_code=404, detail=f"Track {track_id} not found")
-        return track
+        # Fallback to Spotify API if available
+        if spotify_client:
+            logger.info(f"Track {track_id} not in database, trying Spotify API")
+            track = spotify_client.get_track_with_features(track_id)
+            if track:
+                return track
+
+        raise HTTPException(status_code=404, detail=f"Track {track_id} not found")
     except HTTPException:
         raise
     except Exception as e:
