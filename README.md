@@ -25,81 +25,83 @@ All computation is discarded after each response. No user accounts, no session s
 - Node.js 18+
 - PostgreSQL 14+
 
-## Setup
+## Quick Start
 
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/YOUR_USERNAME/nexttrack.git
-cd nexttrack
-```
-
-### 2. Database setup
-
-Create a PostgreSQL database and load the schema:
+### Step 1: Clone and set up the backend
 
 ```bash
-psql -U postgres -c "CREATE DATABASE nexttrack;"
-psql -U postgres -d nexttrack -f backend/db/schema.sql
-```
+git clone https://github.com/ittotoo/nexttrack.git
+cd nexttrack/backend
 
-Load the dataset:
-
-```bash
-cd backend
+# Create virtual environment and install dependencies
 python3 -m venv venv
-source venv/bin/activate
+source venv/bin/activate        # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
-python3 db/load_data.py
+
+# Configure environment
+cp .env.example .env
+# Edit .env with your PostgreSQL credentials (DB_NAME, DB_USER, DB_PASSWORD)
 ```
 
-Run the knowledge graph migration:
+### Step 2: Set up the database
+
+Make sure PostgreSQL is running, then:
 
 ```bash
+# Create the database
+psql -U postgres -c "CREATE DATABASE nexttrack;"
+
+# Load the schema
+psql -U postgres -d nexttrack -f db/schema.sql
+
+# Load the dataset (89,740 tracks)
+python3 db/load_data.py
+
+# Build the knowledge graph
 psql -U postgres -d nexttrack -f db/migration_001_knowledge_graph.sql
 python3 db/populate_knowledge_graph.py
 ```
 
-### 3. Backend configuration
-
-Copy the environment template and fill in your database credentials:
+### Step 3: Start the backend
 
 ```bash
-cp .env.example .env
-# Edit .env with your database credentials
-```
-
-### 4. Start the backend
-
-```bash
-cd backend
 source venv/bin/activate
 python -m uvicorn app.main:app --port 8000
 ```
 
-The API is now running at http://localhost:8000. Interactive docs at http://localhost:8000/docs.
+Verify it works: open http://localhost:8000/docs to see the interactive API docs.
 
-### 5. Start the frontend
+### Step 4: Start the frontend
+
+Open a **new terminal**:
 
 ```bash
-cd frontend
+cd nexttrack/frontend
 npm install
 npm run dev
 ```
 
-Open http://localhost:5173 in your browser.
+Open http://localhost:5173 in your browser. You should see the NextTrack interface.
+
+### Step 5: Try it out
+
+1. Search for a song you like (e.g. "Bohemian Rhapsody")
+2. Click to add it as a seed track
+3. Click **Get Recommendations**
+4. Browse results — each one shows a score breakdown and explanation
+5. Click play to preview via Spotify
 
 ## API Endpoints
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/recommend` | POST | Generate recommendations from 1-5 seed tracks |
-| `/search` | GET | Search tracks by name or artist |
+| `/search?q=` | GET | Search tracks by name or artist |
 | `/track/{id}` | GET | Get track details |
 | `/random` | GET | Random tracks (evaluation baseline) |
 | `/health` | GET | Health check |
 
-### Example request
+### Example
 
 ```bash
 curl -X POST http://localhost:8000/recommend \
@@ -119,25 +121,34 @@ source venv/bin/activate
 pytest -v
 ```
 
+## Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| `Database connection error` | Check your `.env` credentials and that PostgreSQL is running |
+| `No tracks found` | Make sure you ran `python3 db/load_data.py` to load the dataset |
+| `Frontend shows connection error` | Make sure the backend is running on port 8000 |
+| `Spotify client error` | Ignore — the system works without Spotify credentials |
+
 ## Project Structure
 
 ```
 nexttrack/
-├── backend/          # FastAPI application
-│   ├── app/          # Application code
-│   │   ├── models/   # Pydantic data models
-│   │   ├── recommender/  # Hybrid recommendation engine
-│   │   └── external/ # External API clients
-│   ├── tests/        # 64 unit tests
-│   └── db/           # Database schema and migrations
-├── frontend/         # React/TypeScript application
+├── backend/
+│   ├── app/
+│   │   ├── main.py              # API endpoints
+│   │   ├── database.py          # PostgreSQL queries
+│   │   ├── models/              # Data models (Track, AudioFeatures)
+│   │   └── recommender/         # Hybrid engine, similarity, KG, popularity
+│   ├── tests/                   # 64 unit tests
+│   └── db/                      # Schema, migrations, data loader
+├── frontend/
 │   └── src/
-│       ├── components/   # 9 React components
-│       ├── hooks/        # Custom hooks (search, recommendations)
-│       ├── services/     # API client
-│       └── types/        # TypeScript interfaces
-├── Data/             # Kaggle dataset (cleaned)
-└── notebooks/        # Data exploration notebooks
+│       ├── components/          # 9 React components
+│       ├── hooks/               # Search + recommendation hooks
+│       └── services/            # API client
+├── Data/                        # Cleaned Kaggle dataset
+└── notebooks/                   # Data exploration
 ```
 
 ## Licence
