@@ -7,9 +7,9 @@ from pydantic import Field
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
-    # Spotify API Credentials
-    spotify_client_id: str = Field(..., env="SPOTIFY_CLIENT_ID")
-    spotify_client_secret: str = Field(..., env="SPOTIFY_CLIENT_SECRET")
+    # Spotify API Credentials (optional — system works without them)
+    spotify_client_id: str = Field(default="", env="SPOTIFY_CLIENT_ID")
+    spotify_client_secret: str = Field(default="", env="SPOTIFY_CLIENT_SECRET")
 
     # Database Configuration
     db_host: str = Field(default="localhost", env="DB_HOST")
